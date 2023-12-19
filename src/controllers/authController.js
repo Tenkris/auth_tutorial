@@ -34,7 +34,30 @@ const getAuth = async (req, res) => {
     }
 };
 
+const loginUser = async (req, res) => {
+    const {email, password} = req.body; 
+    const connection = await getConnection(); 
+    try{
+        const [rows] = await connection.query('SELECT * FROM auth WHERE email = ?', [email]);
+        if (!rows.length) {
+            return res.status(400).send({ message: 'Email is not registered' });
+        }
+        const user = rows[0];
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(400).send({ message: 'Invalid password' });
+        }
+        res.status(200).send({ message: 'Login successful' });
+    }
+    catch(error){
+        console.error('Error logging in user:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+
+
 module.exports = {
     getAuth,
-    registerUser
+    registerUser,
+    loginUser
 };
