@@ -1,5 +1,6 @@
 const { getConnection } = require('../utils/initmysql');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const registerUser = async (req, res) => {
     const {email , password} = req.body; 
@@ -25,8 +26,23 @@ const registerUser = async (req, res) => {
 const getAuth = async (req, res) => {
     try {
         const connection = await getConnection();
-        const query = 'SELECT * FROM auth';
-        const [results] = await connection.query(query);
+        let token = req.cookies.token; 
+        if(!token){
+            throw new Error('No token found');
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if(!decoded){
+            throw new Error('Invalid token');
+        }
+        console.log(decoded.email)
+        const email = decoded.email;
+        let query = 'SELECT * FROM auth WHERE email = ?';
+        let [results] = await connection.query(query, [email]);
+        if (results.length === 0) {
+            return res.status(404).send({ message: 'Email does not exist' });
+        }
+        query = 'SELECT * FROM auth';
+        [results] = await connection.query(query);
         res.json(results);
     } catch (error) {
         console.error('Error retrieving data from the table:', error);
@@ -47,6 +63,15 @@ const loginUser = async (req, res) => {
         if (!isPasswordValid) {
             return res.status(400).send({ message: 'Invalid password' });
         }
+        // Generate JWT token
+        const token = jwt.sign({ id: user.id , email:user.email}, process.env.JWT_SECRET);
+        // cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            sameSite: 'none'
+        });
         res.status(200).send({ message: 'Login successful' });
     }
     catch(error){

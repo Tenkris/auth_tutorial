@@ -2,6 +2,8 @@ const express = require('express');
 const app = express();
 const {initMySQL,getConnection} = require('./utils/initmysql');
 const authRouter = require('./routes/routes');
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 app.use(express.json());
 // require .dotenv 
 require('dotenv').config(); 
