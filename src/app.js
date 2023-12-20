@@ -1,5 +1,12 @@
 const express = require('express');
 const app = express();
+const cors = require('cors'); 
+
+app.use(cors({
+    origin: 'http://localhost:1112',
+    credentials: true // <-- REQUIRED backend setting
+  }));
+  
 const {initMySQL,getConnection} = require('./utils/initmysql');
 const authRouter = require('./routes/routes');
 app.use(express.json());
